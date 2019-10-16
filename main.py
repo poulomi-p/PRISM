@@ -18,10 +18,10 @@ mov.drop(indexNames, axis = 0, inplace =True)
 indexNames2 = mov[mov['budget'] == 0].index
 mov.drop(indexNames2, axis = 0, inplace =True)
 
-
+print(len(mov))
 perc_profit = pd.Series([])
 for index, row in mov.iterrows():
-    perc_profit[index] = (mov["revenue"].index - mov["budget"].index)/mov["revenue"].index*100
+    perc_profit[index] = pd.to_numeric((mov["revenue"].index - mov["budget"].index)/mov["revenue"].index*100)
 
 mov.insert(20,"perc_profit",perc_profit)
 numeric_features= ["budget", "popularity", "revenue", "runtime" ,"vote_average", "vote_count","perc_profit"]
