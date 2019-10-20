@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import json
+import re
 from io import StringIO
 
 io = StringIO()
@@ -94,14 +95,38 @@ pop_genres = ["Drama", "Comedy", "Thriller", "Action", "Adventure", "Romance", "
 
 # Find all possible possible genres and their counts
 all_genres = {}
-gen_list = pd.Series([])
-cast_list = pd.Series([])
-director = pd.Series([])
-for index, row in mov.iterrows():
+listings = ['genres', 'production_companies', 'production_countries', 'spoken_languages', 'cast', 'crew']
+lists = ['gen_list', 'producers_list', 'countries_list', 'lang_list', 'cast_list', 'crew_list']
+for i in range(len(listings)):
+    list1 = pd.Series([])
+    print(listings[i])
+    for index, row in mov.iterrows():
+    #print(row['title'])
+        #print(i)
+        #print(listings[i])
+        listString = row[listings[i]]
+        #if listString == "nan":
+        #    continue
+        #print(listString)
+        l = re.findall('\'name\': \'[0-9a-zA-Z ]*\'', listString)
+        for j in range(len(l)):
+            st = l[j]
+            st = re.sub('name\': \'', '', st)
+            st = re.sub('\'', '', st)
+            st = re.sub('"', '', st)
+            l[j] = st
+        #print(l)
+        list1[index] = l
+    mov[lists[i]] = list1
+    '''
+    #print(row['genres'])
     stringG = row['genres'].replace('\'', '"')  # Data uses single quotes, but json interp needs double quotes
-    # print(string2)
+    #print("stringG: ")
+    #print(stringG)
     mov_gen = []
     l = json.loads(stringG)  # create list of dictionaries
+    #print("l: ")
+    #print(l)
     for index2 in range(len(l)):
         # print(l[index2])
         if l[index2]['name'] in pop_genres:
@@ -114,43 +139,65 @@ for index, row in mov.iterrows():
         mov_gen = ["Other"]
     gen_list[index] = mov_gen
 
-    stringCast = row['cast'].replace('\'', '"')
-    #print(stringCast)
-    mov_cast = []
-    l2 = json.loads(stringCast)
-    #print(l)
-    for index2 in range(len(l2)):
-        print(l2[index2])
-      #  mov_cast.append(l[index2]['name'])
-    #cast_list[index] = mov_cast
+    #print("stringCast: ")
+    stringCast = row['cast']
+
+
+    mov_cast = re.findall('\'name\': \'[0-9a-zA-Z ]*\',', stringCast)
+    #print(cast)
+    for i in range(len(mov_cast)):
+        #print(st)
+        st = mov_cast[i]
+        st = re.sub('\'name\': \'', '', st)
+        st = re.sub('\',', '', st)
+        mov_cast[i] = st
+        #print(st)
+    #print(mov_cast)
+    cast_list[index] = mov_cast
+
+    stringCrew = row['crew']
+
+
+    #if (row['title'] == "7.1"): continue
+
+    #print(stringCrew)
+    mov_crew = re.findall('\'name\': \'[0-9a-zA-Z ]*\',', stringCrew)
+    #print(mov_crew)
+    for i in range(len(mov_crew)):
+        #print(st)
+        st = mov_crew[i]
+        st = re.sub('\'name\': \'', '', st)
+        st = re.sub('\',', '', st)
+        mov_crew[i] = st
+        #print(st)
+    #print(mov_crew)
+    crew_list[index] = mov_crew
+
+    stringProducers = row['production_companies']
+    mov_producers = re.findall('\'name\': \'[0-9a-zA-Z ]*\',', stringProducers)
+    #print(mov_producers)
+    for i in range(len(mov_producers)):
+        # print(st)
+        st = mov_producers[i]
+        st = re.sub('\'name\': \'', '', st)
+        st = re.sub('\',', '', st)
+        mov_producers[i] = st
+        # print(st)
+    #print(mov_producers)
+    producers_list[index] = mov_producers
 
 mov['gen_list'] = gen_list
-#mov['cast_list'] = cast_list
-print(all_genres)
-
-pop_genres = pop_genres + ["Other"]
+mov['cast_list'] = cast_list
+mov['crew_list'] = crew_list
+mov['producers_list'] = producers_list
+#print(all_genres)
+'''
+#pop_genres = pop_genres + ["Other"]
 # populate binary dummy values of each popular genre
 # If not listed in popular genre, movie is listed as other
-'''
-other = pd.Series([])
-for entry in pop_genres:
-     #print(entry)
-     mov_list = pd.Series([])
-     for index, row in mov.iterrows():
-          l = row['gen_list']
-          if len(l) == 0:
-               other[index] = True;
-          else:
-               other[index] = False;
-               if entry in l:
-                    mov_list[index] = True;
-               else:
-                    mov_list[index] = False;
-     mov[entry] = mov_list
-mov["Other"] = other
-'''
-t = pd.get_dummies(mov['gen_list'].apply(pd.Series).stack()).sum(level=0)
-mov = pd.concat([mov, t], axis=1)
 
-print(mov[pop_genres].head())
-#print(mov['cast_list'].head())
+#lists = ['title', 'gen_list', 'cast_list', 'crew_list', 'producers_list']
+train = ['budget', 'popularity', 'release_date', 'revenue', 'vote_average'] + lists
+mov_train = mov[train]
+
+print(mov_train)
