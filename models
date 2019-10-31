@@ -1,0 +1,56 @@
+import numpy as np
+import pandas as pd
+from sklearn import linear_model
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.model_selection import train_test_split
+from sklearn import svm
+from sklearn import metrics
+import json
+import re
+from io import StringIO
+
+io = StringIO()
+pd.set_option('display.float_format', lambda x: '%.3f' % x)
+pd.set_option('display.max_columns', 25)
+
+
+mov = pd.read_csv("processed.csv")
+svms = ['gen_list', 'producers_list', 'countries_list', 'lang_list', 'cast_list', 'crew_list']
+#regression = ['budget', 'popularity', 'vote_average']
+regression = ['budget', 'popularity']
+model = regression + svms
+for entry in model:
+    #print(f"For feature {entry}, there are {mov[entry].isna().sum()} NaN values")
+    if mov[entry].isna().sum() > 0:
+        mov.dropna(subset=[entry], inplace=True)
+
+mov_model = mov[model]
+mov_target = mov['perc_profit']
+
+# percent profit variable is currently continuous, which is not supported by SVM
+# attempting to 'standardize' percent profit by using equation x = (x-mean(x))/stdev(x)
+mov['perc_profit_stand'] = (mov['perc_profit'] - mov['perc_profit'].mean())/mov['perc_profit'].std()
+
+#for entry in regression:
+x_train, x_test, y_train, y_test = train_test_split(mov['budget'], mov['perc_profit_stand'], test_size=0.2, random_state=1000)
+
+
+
+x_train = x_train.values.reshape(-1, 1)
+x_test = x_test.values.reshape(-1, 1)
+
+#y_train = y_train.values.reshape(-1, 1)
+#y_test = y_test.values.reshape(-1, 1)
+print(x_train)
+print(y_train)
+
+# Create a svm Classifier
+clf = svm.SVC(kernel='linear')  # Linear Kernel
+
+# Train the model using the training sets
+clf.fit(x_train, y_train)
+'''
+# Predict the response for test dataset
+y_pred = clf.predict(x_test)
+print("Accuracy:", metrics.accuracy_score(y_test, y_pred))'''

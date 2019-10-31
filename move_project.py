@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from sklearn import linear_model
+from sklearn.model_selection import train_test_split
 import json
 import re
 from io import StringIO
@@ -69,7 +71,11 @@ mov["perc_profit"] = (mov["revenue"] - mov["budget"]) / mov["budget"] * 100
 
 # Force values to numbers
 mov["perc_profit"] = mov["perc_profit"].apply(pd.to_numeric, errors='coerce')
-# print(mov["perc_profit"].dtype)
+#print(mov["perc_profit"].dtype)
+#print(mov['perc_profit'].describe(include='all'))
+#print(mov['perc_profit'].isna().sum())
+mov.dropna(subset=['perc_profit'], inplace=True)
+#print(mov['perc_profit'].isna().sum())
 
 # Display data section with new data
 numeric_features = ["budget", "popularity", "revenue", "runtime", "vote_average", "vote_count", "perc_profit"]
@@ -94,7 +100,7 @@ pop_genres = ["Drama", "Comedy", "Thriller", "Action", "Adventure", "Romance", "
               "Family"]
 
 # Find all possible possible genres and their counts
-all_genres = {}
+
 listings = ['genres', 'production_companies', 'production_countries', 'spoken_languages', 'cast', 'crew']
 lists = ['gen_list', 'producers_list', 'countries_list', 'lang_list', 'cast_list', 'crew_list']
 for i in range(len(listings)):
@@ -119,6 +125,7 @@ for i in range(len(listings)):
         list1[index] = l
     mov[lists[i]] = list1
     '''
+    all_genres = {}
     #print(row['genres'])
     stringG = row['genres'].replace('\'', '"')  # Data uses single quotes, but json interp needs double quotes
     #print("stringG: ")
@@ -195,9 +202,4 @@ mov['producers_list'] = producers_list
 #pop_genres = pop_genres + ["Other"]
 # populate binary dummy values of each popular genre
 # If not listed in popular genre, movie is listed as other
-
-#lists = ['title', 'gen_list', 'cast_list', 'crew_list', 'producers_list']
-train = ['budget', 'popularity', 'release_date', 'revenue', 'vote_average'] + lists
-mov_train = mov[train]
-
-print(mov_train)
+mov.to_csv('processed.csv')
