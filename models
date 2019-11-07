@@ -22,7 +22,7 @@ for entry in model:
     #print(f"For feature {entry}, there are {mov[entry].isna().sum()} NaN values")
     if mov[entry].isna().sum() > 0:
         mov.dropna(subset=[entry], inplace=True)
-print(mov.describe(include="all"))
+#print(mov.describe(include="all"))
 
 
 mov_model = mov[model]
@@ -33,3 +33,11 @@ x_train, x_test, y_train, y_test = train_test_split(mov_model, mov_target, test_
 #x_test = x_test.values.reshape(-1, 1)
 #y_train = y_train.values.reshape(-1, 1)
 #y_test = y_test.values.reshape(-1, 1)
+
+print(x_train)
+print(y_train)
+
+# term frequency
+# make revenue the target
+# success failure
+# lime linearly interpretable model explainers on Github
