@@ -68,9 +68,12 @@ mov.drop(indexNames2, axis=0, inplace=True)
 
 # Create percent profit data
 mov["perc_profit"] = (mov["revenue"] - mov["budget"]) / mov["budget"] * 100
+mov['success'] = mov['revenue'] > mov['budget']
+print(mov['success'])
 
 # Force values to numbers
 mov["perc_profit"] = mov["perc_profit"].apply(pd.to_numeric, errors='coerce')
+
 #print(mov["perc_profit"].dtype)
 #print(mov['perc_profit'].describe(include='all'))
 #print(mov['perc_profit'].isna().sum())
@@ -103,8 +106,10 @@ pop_genres = ["Drama", "Comedy", "Thriller", "Action", "Adventure", "Romance", "
 
 listings = ['genres', 'production_companies', 'production_countries', 'spoken_languages', 'cast', 'crew']
 lists = ['gen_list', 'producers_list', 'countries_list', 'lang_list', 'cast_list', 'crew_list']
+success_list = pd.Series([])
 for i in range(len(listings)):
     list1 = pd.Series([])
+    successDict = {}
     print(listings[i])
     for index, row in mov.iterrows():
     #print(row['title'])
@@ -121,10 +126,18 @@ for i in range(len(listings)):
             st = re.sub('\'', '', st)
             st = re.sub('"', '', st)
             l[j] = st
+            if row['success']:
+                if st in successDict:
+                    successDict[st] += 1
+                else:
+                    successDict[st] = 1
         #print(l)
         list1[index] = l
     mov[lists[i]] = list1
-    '''
+    success_list[i] = successDict
+
+print(success_list)
+'''
     all_genres = {}
     #print(row['genres'])
     stringG = row['genres'].replace('\'', '"')  # Data uses single quotes, but json interp needs double quotes
@@ -202,4 +215,11 @@ mov['producers_list'] = producers_list
 #pop_genres = pop_genres + ["Other"]
 # populate binary dummy values of each popular genre
 # If not listed in popular genre, movie is listed as other
+
+
+
+ #           #print list of words to file
+ #           for j in row[index][lists(i)]:
+
 mov.to_csv('processed.csv')
+success_list.to_csv('success_lists.csv')

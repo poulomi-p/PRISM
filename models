@@ -14,9 +14,10 @@ io = StringIO()
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 pd.set_option('display.max_columns', 25)
 mov = pd.read_csv("processed.csv")
+success_lists = pd.read_csv("success_lists.csv")
 
 textual = ['gen_list', 'producers_list', 'countries_list', 'lang_list', 'cast_list', 'crew_list']
-numerical = ['budget', 'popularity']
+numerical = ['budget', 'popularity', 'success']
 model = textual + numerical
 for entry in model:
     #print(f"For feature {entry}, there are {mov[entry].isna().sum()} NaN values")
@@ -26,16 +27,14 @@ for entry in model:
 
 
 mov_model = mov[model]
-mov_target = mov['perc_profit']
+mov_target = mov['success']
 
 x_train, x_test, y_train, y_test = train_test_split(mov_model, mov_target, test_size=0.2, random_state=1000)
-#x_train = x_train.values.reshape(-1, 1)
-#x_test = x_test.values.reshape(-1, 1)
-#y_train = y_train.values.reshape(-1, 1)
-#y_test = y_test.values.reshape(-1, 1)
 
 print(x_train)
 print(y_train)
+
+
 
 # term frequency
 # make revenue the target
