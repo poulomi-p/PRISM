@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 import json
 import re
 from io import StringIO
-
+import operator
 io = StringIO()
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 pd.set_option('display.max_columns', 25)
@@ -32,7 +32,7 @@ mov.dropna(subset=["revenue"], inplace=True)  # drop rows with NaN revenues
 # print(mov.isna().sum())
 
 # Force all numeric data to float64 data type
-numeric_features = ["budget", "popularity", "revenue", "runtime", "vote_average", "vote_count"]
+numeric_features = ["budget", "popularity", "revenue", "runtime", "vote_average", "vote_count", "keywords"]
 for feature_num in numeric_features:
     mov[feature_num] = mov[feature_num].apply(pd.to_numeric, errors='coerce')
 
@@ -69,7 +69,7 @@ mov.drop(indexNames2, axis=0, inplace=True)
 # Create percent profit data
 mov["perc_profit"] = (mov["revenue"] - mov["budget"]) / mov["budget"] * 100
 mov['success'] = mov['revenue'] > mov['budget']
-print(mov['success'])
+#print(mov['success'])
 
 # Force values to numbers
 mov["perc_profit"] = mov["perc_profit"].apply(pd.to_numeric, errors='coerce')
@@ -105,11 +105,17 @@ pop_genres = ["Drama", "Comedy", "Thriller", "Action", "Adventure", "Romance", "
 # Find all possible possible genres and their counts
 
 listings = ['genres', 'production_companies', 'production_countries', 'spoken_languages', 'cast', 'crew']
+max_entries_movies = 3
+min_movie = [10, 100, 10, 10, 4800, 4800] #edit crew members later
 lists = ['gen_list', 'producers_list', 'countries_list', 'lang_list', 'cast_list', 'crew_list']
 success_list = pd.Series([])
+success_dicts = pd.Series([])
+top_lists = {}
 for i in range(len(listings)):
     list1 = pd.Series([])
     successDict = {}
+    list2 = pd.Series([])
+    list3 = []
     print(listings[i])
     for index, row in mov.iterrows():
     #print(row['title'])
@@ -134,10 +140,42 @@ for i in range(len(listings)):
         #print(l)
         list1[index] = l
     mov[lists[i]] = list1
-    success_list[i] = successDict
+    # Create a list of tuples sorted by index 1 i.e. value field
+    listofTuples = sorted(successDict.items(), reverse=True, key=lambda x: x[1])
 
-print(success_list)
-'''
+    # Iterate over the sorted sequence
+    for j in range(0, min_movie[i]):
+        #print(str(listofTuples[j][1]) + "::" + listofTuples[j][0])
+        list2[j] = str(listofTuples[j][0])
+
+
+    top_lists[lists[i]] = list2
+    #success_list[i] = listofTuples
+    #success_dicts[i] = successDict
+
+
+#print(top_lists)
+#print(mov[lists].describe(include="all"))
+
+for i in range(len(lists)):
+    list_name = lists[i]
+    top = top_lists[list_name]
+    for index, row in mov.iterrows():
+        list3 = []
+        for j in range(len(row[list_name])):
+            entry = row[list_name][j]
+            if len(list3) <= 3:
+                #print(top_lists[i])
+                if entry in top:
+                    '''  
+                    list3.append(j)
+            else:
+                break
+        print(list3)
+        row[i] = list3
+print(mov[lists])
+
+
     all_genres = {}
     #print(row['genres'])
     stringG = row['genres'].replace('\'', '"')  # Data uses single quotes, but json interp needs double quotes
@@ -212,14 +250,11 @@ mov['crew_list'] = crew_list
 mov['producers_list'] = producers_list
 #print(all_genres)
 '''
-#pop_genres = pop_genres + ["Other"]
-# populate binary dummy values of each popular genre
-# If not listed in popular genre, movie is listed as other
 
 
 
- #           #print list of words to file
- #           for j in row[index][lists(i)]:
+mov.drop(listings, axis=1, inplace=True)
+#print list of words to file
+mov[lists+numeric_features].to_csv('processed.csv')
+#success_list.to_csv('success_lists.csv')
 
-mov.to_csv('processed.csv')
-success_list.to_csv('success_lists.csv')
