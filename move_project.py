@@ -114,8 +114,8 @@ top_lists = {}
 for i in range(len(listings)):
     list1 = pd.Series([])
     successDict = {}
-    list2 = pd.Series([])
-    list3 = []
+    list2 = []
+    list3 = pd.Series([])
     print(listings[i])
     for index, row in mov.iterrows():
     #print(row['title'])
@@ -146,7 +146,7 @@ for i in range(len(listings)):
     # Iterate over the sorted sequence
     for j in range(0, min_movie[i]):
         #print(str(listofTuples[j][1]) + "::" + listofTuples[j][0])
-        list2[j] = str(listofTuples[j][0])
+        list2.append(listofTuples[j][0])
 
 
     top_lists[lists[i]] = list2
@@ -164,17 +164,16 @@ for i in range(len(lists)):
         list3 = []
         for j in range(len(row[list_name])):
             entry = row[list_name][j]
-            if len(list3) <= 3:
+            if len(list3) < 3:
                 #print(top_lists[i])
                 if entry in top:
-                    '''  
-                    list3.append(j)
+                    list3.append(entry)
             else:
                 break
         print(list3)
-        row[i] = list3
-print(mov[lists])
-
+        row[list_name] = list3
+print(mov[lists].describe(include = "all"))
+''' 
 
     all_genres = {}
     #print(row['genres'])
