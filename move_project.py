@@ -106,7 +106,7 @@ pop_genres = ["Drama", "Comedy", "Thriller", "Action", "Adventure", "Romance", "
 
 listings = ['genres', 'production_companies', 'production_countries', 'spoken_languages', 'cast', 'crew']
 max_entries_movies = 3
-min_movie = [10, 100, 10, 10, 4800, 4800] #edit crew members later
+min_movie = [10, 10, 10, 10, 10, 10] #edit crew members later
 lists = ['gen_list', 'producers_list', 'countries_list', 'lang_list', 'cast_list', 'crew_list']
 success_list = pd.Series([])
 success_dicts = pd.Series([])
@@ -156,23 +156,33 @@ for i in range(len(listings)):
 
 #print(top_lists)
 #print(mov[lists].describe(include="all"))
+print(mov[lists].describe(include="all"))
 
 for i in range(len(lists)):
     list_name = lists[i]
     top = top_lists[list_name]
+    list_dict = {}
+    list_embed = pd.Series([])
     for index, row in mov.iterrows():
         list3 = []
         for j in range(len(row[list_name])):
             entry = row[list_name][j]
             if len(list3) < 3:
                 #print(top_lists[i])
-                if entry in top:
+                if (entry in top) and not(entry in list3):
                     list3.append(entry)
             else:
                 break
-        print(list3)
-        row[list_name] = list3
-print(mov[lists].describe(include = "all"))
+        list3 = sorted(list3)
+        s = ("".join(list3))
+        if s not in list_dict:
+            list_dict[s] = len(list_dict)+1
+        list_embed[index] = list_dict[s]
+        mov.at[index, list_name] = list3
+    mov[list_name+'_val'] = list_embed
+print(mov[lists].describe(include="all"))
+lists_val = ['gen_list_val', 'producers_list_val', 'countries_list_val', 'lang_list_val', 'cast_list_val', 'crew_list_val']
+print(mov[lists_val])
 ''' 
 
     all_genres = {}
@@ -254,6 +264,6 @@ mov['producers_list'] = producers_list
 
 mov.drop(listings, axis=1, inplace=True)
 #print list of words to file
-mov[lists+numeric_features].to_csv('processed.csv')
+#mov[lists+numeric_features].to_csv('processed.csv')
 #success_list.to_csv('success_lists.csv')
 
