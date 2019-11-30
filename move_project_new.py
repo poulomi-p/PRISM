@@ -126,7 +126,7 @@ X_train, X_test, y_train, y_test = train_test_split(mov[text], mov['success'], t
 
 
 
-counter=CountVectorizer( ngram_range=(1,3))
+counter=CountVectorizer( ngram_range=(1,3),stop_words='english')
 #X_train_bow=counter.fit_transform(X_train)
 genlist_train=[]
 genlist_test=[]
@@ -151,33 +151,45 @@ tfidfer=TfidfTransformer()
 X_train_tfidf=tfidfer.fit_transform(X_train_bow)
 X_test_tfidf=tfidfer.transform(X_test_bow)
 
-
-
+'''
 svm = LinearSVC().fit(X_train_tfidf,y_train)
 y_pred = svm.predict(X_test_tfidf)
 print(classification_report(y_test, y_pred))
 
+hasher=HashingVectorizer(stop_words="english", ngram_range=(1,3),alternate_sign=False)
+X_train_hash=hasher.fit_transform(genlist_train)
+X_test_hash=hasher.transform(genlist_test)
 
-#mnb_tfid = MultinomialNB()
-#mnb_tfid.fit(X_train_tfidf, y_train)
-#mnb_tfid_y_predict = mnb_tfid.predict(X_test_tfidf)
-#print(classification_report(y_test, mnb_tfid_y_predict))
+svm_hash = LinearSVC().fit(X_train_hash,y_train)
+y_pred_hash = svm_hash.predict(X_test_hash)
+print(classification_report(y_test, y_pred_hash))
+'''
+mnb = MultinomialNB()
+mnb.fit(X_train_tfidf, y_train)
+mnb_y_predict = mnb.predict(X_test_tfidf)
+print(classification_report(y_test, mnb_y_predict))
 
 def reg():
    str_all =''
    test=[]
    str_all=e_genres.get()+" "+e_procom.get()+" "+e_procount.get()+" "+e_cast.get()+" "+e_crew.get()+" "+e_title.get()
    str_all=str_all + " "+e_keywords.get()+" "+e_tagline.get()+" "+e_overview.get()+" "+e_spl.get()
-   test.append(str_all)
-   X_tr_bow = counter.transform(test)
-   print(X_tr_bow.shape)
-   X_tr_tfidf = tfidfer.transform(X_tr_bow)
-   pred= svm.predict(X_tr_tfidf)
-   print(pred)
-   if(pred):
-     l_msg['text'] = 'your movie will be successful'
+   str_all=str_all.strip()
+   if(str_all==''):
+       l_msg['text'] = 'please input new movie\'s information'
    else:
-     l_msg['text'] = 'your movie will not be successful'
+      test.append(str_all)
+      pred=False
+      X_tr_bow = counter.transform(test)
+      X_tr_tfidf = tfidfer.transform(X_tr_bow)
+      print(np.sum(X_tr_tfidf))
+      if(np.sum(X_tr_tfidf)>0):
+         pred= mnb.predict(X_tr_tfidf)
+      if(pred):
+         l_msg['text'] = 'your movie will be successful'
+      else:
+         l_msg['text'] = 'your movie will not be successful'
+
 
 
 root = tk.Tk()
