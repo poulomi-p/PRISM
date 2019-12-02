@@ -201,7 +201,7 @@ e_title = tk.Entry(root)
 e_title.grid(row=1, column=2, sticky=tk.E, padx=3)
 
 # cast
-l_cast= tk.Label(root, text='cast')
+l_cast = tk.Label(root, text='cast')
 l_cast.grid(row=2, sticky=tk.W)
 e_cast = tk.Entry(root)
 e_cast.grid(row=2, column=2, sticky=tk.E, padx=3)
@@ -213,9 +213,9 @@ e_crew = tk.Entry(root)
 e_crew.grid(row=3, column=2, sticky=tk.E, padx=3)
 
 #tagline
-l_tagline= tk.Label(root, text='tagline')
+l_tagline = tk.Label(root, text='tagline')
 l_tagline.grid(row=4, sticky=tk.W)
-e_tagline= tk.Entry(root)
+e_tagline = tk.Entry(root)
 e_tagline.grid(row=4, column=2, sticky=tk.E, padx=3)
 
 #keywords

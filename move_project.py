@@ -17,6 +17,7 @@ from sklearn.metrics import classification_report, f1_score, accuracy_score
 from sklearn.svm import LinearSVC
 
 import operator
+
 io = StringIO()
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 pd.set_option('display.max_columns', 25)
@@ -79,17 +80,17 @@ mov.drop(indexNames2, axis=0, inplace=True)
 
 # Create percent profit data
 mov["perc_profit"] = (mov["revenue"] - mov["budget"]) / mov["budget"] * 100
-mov['success'] = mov['revenue'] > mov['budget']
-#print(mov['success'])
+mov['success'] = mov['revenue'] > 2*mov['budget']
+# print(mov['success'])
 
 # Force values to numbers
 mov["perc_profit"] = mov["perc_profit"].apply(pd.to_numeric, errors='coerce')
 
-#print(mov["perc_profit"].dtype)
-#print(mov['perc_profit'].describe(include='all'))
-#print(mov['perc_profit'].isna().sum())
+# print(mov["perc_profit"].dtype)
+# print(mov['perc_profit'].describe(include='all'))
+# print(mov['perc_profit'].isna().sum())
 mov.dropna(subset=['perc_profit'], inplace=True)
-#print(mov['perc_profit'].isna().sum())
+# print(mov['perc_profit'].isna().sum())
 
 # Display data section with new data
 numeric_features = ["budget", "popularity", "revenue", "runtime", "vote_average", "vote_count", "perc_profit"]
@@ -117,7 +118,8 @@ pop_genres = ["Drama", "Comedy", "Thriller", "Action", "Adventure", "Romance", "
 
 listings = ['genres', 'production_companies', 'production_countries', 'spoken_languages', 'cast', 'crew']
 max_entries_movies = 3
-min_movie = [10, 100, 10, 10, 500, 500] #edit crew members later
+min_movie = [10, 100, 10, 10, 250, 100]  # edit crew members later
+max_list = [3, 3, 2, 2, 3, 3]
 lists = ['gen_list', 'producers_list', 'countries_list', 'lang_list', 'cast_list', 'crew_list']
 success_list = pd.Series([])
 success_dicts = pd.Series([])
@@ -149,33 +151,75 @@ for i in range(len(listings)):
 
     # Iterate over the sorted sequence
     for j in range(0, min_movie[i]):
-        list2.append(listofTuples[j][0])
+        if listofTuples[j][0] != '':
+            list2.append(listofTuples[j][0])
     top_lists[lists[i]] = list2
 
+dicts = {}
+lists_val = ['gen_list_val', 'producers_list_val', 'countries_list_val', 'lang_list_val', 'cast_list_val',
+             'crew_list_val']
 for i in range(len(lists)):
     list_name = lists[i]
+    print(lists_val[i])
     top = top_lists[list_name]
     list_dict = {}
     list_embed = pd.Series([])
+    x = 1
+    list_dict[""] = x
+    for j in range(len(top)):
+        x += 1
+        ind1 = top[j]
+        lst = ind1
+        list_dict[lst] = x
+        for k in range(j + 1, len(top)):
+            ind2 = top[k]
+            if ind1 == ind2:
+                continue
+            x += 1
+            lst1 = ind1 + ind2
+            lst2 = ind2 + ind1
+            list_dict[lst1] = x
+            list_dict[lst2] = x
+            if list_name != 'countries_list' and list_name != 'lang_list':
+                for l in range(k + 1, len(top)):
+
+                    ind3 = top[l]
+                    if ind1 == ind3 or ind2 == ind3:
+                        continue
+                    x += 1
+                    lst1 = ind1 + ind2 + ind3
+                    lst2 = ind1 + ind3 + ind2
+                    lst3 = ind2 + ind1 + ind3
+                    lst4 = ind2 + ind3 + ind1
+                    lst5 = ind3 + ind1 + ind2
+                    lst6 = ind3 + ind2 + ind1
+                    list_dict[lst1] = x
+                    list_dict[lst2] = x
+                    list_dict[lst3] = x
+                    list_dict[lst4] = x
+                    list_dict[lst5] = x
+                    list_dict[lst6] = x
+
     for index, row in mov.iterrows():
         list3 = []
         for j in range(len(row[list_name])):
             entry = row[list_name][j]
-            if len(list3) < 3:
-                #print(top_lists[i])
-                if (entry in top) and not(entry in list3):
+            if len(list3) < max_list[i]:
+                # print(top_lists[i])
+                if (entry in top) and not (entry in list3):
                     list3.append(entry)
             else:
                 break
-        list3 = sorted(list3)
         s = ("".join(list3))
         if s not in list_dict:
-            list_dict[s] = len(list_dict)+1
+            x += 1
+            list_dict[s] = x
         list_embed[index] = list_dict[s]
         mov.at[index, list_name] = list3
-    mov[list_name+'_val'] = list_embed
-lists_val = ['gen_list_val', 'producers_list_val', 'countries_list_val', 'lang_list_val', 'cast_list_val', 'crew_list_val']
-#print(mov[lists_val].describe(include="all"))
+        dicts[list_name] = list_dict
+    mov[lists_val[i]] = list_embed
+
+print(mov['success'].describe(include="all"))
 
 
 target = ['success']
@@ -189,155 +233,168 @@ svm = LinearSVC().fit(X_train_tfidf, y_train)
 y_pred = svm.predict(X_test_tfidf)
 print(classification_report(y_test, y_pred))
 
-'''
+
 def reg():
-    str_all = ''
-    test = []
-    str_all = e_genres.get() + " " + e_procom.get() + " " + e_procount.get() + " " + e_cast.get() + " " + e_crew.get() +  " "
-    str_all = str_all + " " + e_spl.get()
-    test.append(str_all)
-    print(X_train.shape)
-    X_tr_tfidf = tfidfer.transform(X_train)
-    pred = svm.predict(X_tr_tfidf)
+    X_user = pd.DataFrame([])
+    X_act_val = pd.Series([])
+    X_crew_val = pd.Series([])
+    X_gen_val = pd.Series([])
+    X_producers_val = pd.Series([])
+    X_countries_val = pd.Series([])
+    X_lang_val = pd.Series([])
+
+    X_act_val[0] = dicts['cast_list'][act1.get() + act2.get() + act3.get()]
+    X_user['cast_list_val'] = X_act_val
+    X_crew_val[0] = dicts['crew_list'][crew1.get() + crew2.get() + crew3.get()]
+    X_user['crew_list_val'] = X_crew_val
+    X_gen_val[0] = dicts['gen_list'][genre1.get() + genre2.get() + genre3.get()]
+    X_user['gen_list_val'] = X_gen_val
+    X_producers_val[0] = dicts['producers_list'][procom1.get() + procom2.get() + procom3.get()]
+    X_user['producers_list_val'] = X_producers_val
+    X_countries_val[0] = dicts['countries_list'][pr1.get() + pr2.get()]
+    X_user['countries_list_val'] = X_countries_val
+    X_lang_val[0] = dicts['lang_list'][l1.get() + l2.get()]
+    X_user['lang_list_val'] = X_lang_val
+
+    X_tr_tfidf_u = tfidfer.transform(X_user)
+    pred = svm.predict(X_tr_tfidf_u)
     print(pred)
     if pred:
         l_msg['text'] = 'your movie will be successful'
     else:
         l_msg['text'] = 'your movie will not be successful'
-'''
+
+
 root = tk.Tk()
 root.title("Drop-down boxes for option selections.")
 
 root.geometry('500x500')
 root.title("movie prediction")
 
-
 l_msg = tk.Label(root, text='INPUT NEW MOVIE INFORMATION')
 l_msg.grid(row=0, columnspan=3)
+
 # cast
 l_cast1 = tk.Label(root, text='Select Actor 1:')
 l_cast1.grid(row=2, sticky=tk.W)
-e_cast1 = tk.StringVar(root)
-e_cast1.set("")
-a1 = ttk.Combobox(root, value=sorted(top_lists['cast_list']), textvariable=e_cast1)
+act1 = tk.StringVar(root)
+act1.set("")
+a1 = ttk.Combobox(root, value=sorted(top_lists['cast_list']), textvariable=act1)
 a1.grid(row=2, column=2, sticky=tk.E, padx=3)
 # cast 2
 l_cast2 = tk.Label(root, text='Select Actor 2:')
 l_cast2.grid(row=3, sticky=tk.W)
-e_cast2 = tk.StringVar(root)
-e_cast2.set("")
-a2 = ttk.Combobox(root, value=sorted(top_lists['cast_list']), textvariable=e_cast2)
+act2 = tk.StringVar(root)
+act2.set("")
+a2 = ttk.Combobox(root, value=sorted(top_lists['cast_list']), textvariable=act2)
 a2.grid(row=3, column=2, sticky=tk.E, padx=3)
 # cast 3
 l_cast3 = tk.Label(root, text='Select Actor 3:')
 l_cast3.grid(row=4, sticky=tk.W)
-e_cast3 = tk.StringVar(root)
-e_cast3.set("")
-a3 = ttk.Combobox(root, value=sorted(top_lists['cast_list']), textvariable=e_cast3)
+act3 = tk.StringVar(root)
+act3.set("")
+a3 = ttk.Combobox(root, value=sorted(top_lists['cast_list']), textvariable=act3)
 a3.grid(row=4, column=2, sticky=tk.E, padx=3)
 
 # crew
 l_crew1 = tk.Label(root, text='Select Crew Member 1:')
 l_crew1.grid(row=5, sticky=tk.W)
-e_crew1 = tk.StringVar(root)
-e_crew1.set("")
-c1 = ttk.Combobox(root, value=sorted(top_lists['crew_list']), textvariable=e_crew1)
+crew1 = tk.StringVar(root)
+crew1.set("")
+c1 = ttk.Combobox(root, value=sorted(top_lists['crew_list']), textvariable=crew1)
 c1.grid(row=5, column=2, sticky=tk.E, padx=3)
 # cast 2
 l_crew2 = tk.Label(root, text='Select Crew Member 2:')
 l_crew2.grid(row=6, sticky=tk.W)
-e_crew2 = tk.StringVar(root)
-e_crew2.set("")
-c2 = ttk.Combobox(root, value=sorted(top_lists['crew_list']), textvariable=e_crew2)
+crew2 = tk.StringVar(root)
+crew2.set("")
+c2 = ttk.Combobox(root, value=sorted(top_lists['crew_list']), textvariable=crew2)
 c2.grid(row=6, column=2, sticky=tk.E, padx=3)
 # cast 3
 l_crew3 = tk.Label(root, text='Select Crew Member 3:')
 l_crew3.grid(row=7, sticky=tk.W)
-e_crew3 = tk.StringVar(root)
-e_crew3.set("")
-c3 = ttk.Combobox(root, value=sorted(top_lists['crew_list']), textvariable=e_crew3)
+crew3 = tk.StringVar(root)
+crew3.set("")
+c3 = ttk.Combobox(root, value=sorted(top_lists['crew_list']), textvariable=crew3)
 c3.grid(row=7, column=2, sticky=tk.E, padx=3)
 
 # genres
 l_genre1 = tk.Label(root, text='Select Genre 1:')
 l_genre1.grid(row=8, sticky=tk.W)
-e_genre1 = tk.StringVar(root)
-e_genre1.set("")
-g1 = ttk.Combobox(root, value=sorted(top_lists['gen_list']), textvariable=e_genre1)
+genre1 = tk.StringVar(root)
+genre1.set("")
+g1 = ttk.Combobox(root, value=sorted(top_lists['gen_list']), textvariable=genre1)
 g1.grid(row=8, column=2, sticky=tk.E, padx=3)
 # genre 2
 l_genre2 = tk.Label(root, text='Select Genre 2:')
 l_genre2.grid(row=9, sticky=tk.W)
-e_genre2 = tk.StringVar(root)
-e_genre2.set("")
-g2 = ttk.Combobox(root, value=sorted(top_lists['gen_list']), textvariable=e_genre2)
+genre2 = tk.StringVar(root)
+genre2.set("")
+g2 = ttk.Combobox(root, value=sorted(top_lists['gen_list']), textvariable=genre2)
 g2.grid(row=9, column=2, sticky=tk.E, padx=3)
 # genre 3
 l_genre3 = tk.Label(root, text='Select Genre 3:')
 l_genre3.grid(row=10, sticky=tk.W)
-e_genre3 = tk.StringVar(root)
-e_genre3.set("")
-g3 = ttk.Combobox(root, value=sorted(top_lists['gen_list']), textvariable=e_genre3)
+genre3 = tk.StringVar(root)
+genre3.set("")
+g3 = ttk.Combobox(root, value=sorted(top_lists['gen_list']), textvariable=genre3)
 g3.grid(row=10, column=2, sticky=tk.E, padx=3)
 
 # production_company 1
 l_procom1 = tk.Label(root, text='Select Producer 1:')
 l_procom1.grid(row=11, sticky=tk.W)
-e_procom1 = tk.StringVar(root)
-e_procom1.set("")
-p1 = ttk.Combobox(root, value=sorted(top_lists['producers_list']), textvariable=e_procom1)
+procom1 = tk.StringVar(root)
+procom1.set("")
+p1 = ttk.Combobox(root, value=sorted(top_lists['producers_list']), textvariable=procom1)
 p1.grid(row=11, column=2, sticky=tk.E, padx=3)
 # production_company 2
 l_procom2 = tk.Label(root, text='Select Producer 2:')
 l_procom2.grid(row=12, sticky=tk.W)
-e_procom2 = tk.StringVar(root)
-e_procom2.set("")
-p2 = ttk.Combobox(root, value=sorted(top_lists['producers_list']), textvariable=e_procom2)
+procom2 = tk.StringVar(root)
+procom2.set("")
+p2 = ttk.Combobox(root, value=sorted(top_lists['producers_list']), textvariable=procom2)
 p2.grid(row=12, column=2, sticky=tk.E, padx=3)
 # production_company 3
 l_procom3 = tk.Label(root, text='Select Producer 3:')
 l_procom3.grid(row=13, sticky=tk.W)
-e_procom3 = tk.StringVar(root)
-e_procom3.set("")
-p3 = ttk.Combobox(root, value=sorted(top_lists['producers_list']), textvariable=e_procom3)
+procom3 = tk.StringVar(root)
+procom3.set("")
+p3 = ttk.Combobox(root, value=sorted(top_lists['producers_list']), textvariable=procom3)
 p3.grid(row=13, column=2, sticky=tk.E, padx=3)
-
 
 # 'production_countries' 1
 l_procount1 = tk.Label(root, text='Select Country 1:')
 l_procount1.grid(row=14, sticky=tk.W)
-e_procount1 = tk.StringVar(root)
-e_procount1.set("")
-pr1 = ttk.Combobox(root, value=sorted(top_lists['countries_list']), textvariable=e_procount1)
+procount1 = tk.StringVar(root)
+procount1.set("")
+pr1 = ttk.Combobox(root, value=sorted(top_lists['countries_list']), textvariable=procount1)
 pr1.grid(row=14, column=2)
 # 'production_countries' 2
 l_procount2 = tk.Label(root, text='Select Country 2:')
 l_procount2.grid(row=15, sticky=tk.W)
-e_procount2 = tk.StringVar(root)
-e_procount2.set("")
-pr2 = ttk.Combobox(root, value=sorted(top_lists['countries_list']), textvariable=e_procount2)
+procount2 = tk.StringVar(root)
+procount2.set("")
+pr2 = ttk.Combobox(root, value=sorted(top_lists['countries_list']), textvariable=procount2)
 pr2.grid(row=15, column=2)
-
 
 # 'spoken_languages 1
 l_spl1 = tk.Label(root, text='Select Language 1:')
 l_spl1.grid(row=16, sticky=tk.W)
-e_spl1 = tk.StringVar(root)
-e_spl1.set("")
-l1 = ttk.Combobox(root, value=sorted(top_lists['lang_list']), textvariable=e_spl1)
-l1.grid(row=16, column=2)
+l1 = tk.StringVar(root)
+l1.set("")
+lang1 = ttk.Combobox(root, value=sorted(top_lists['lang_list']), textvariable=l1)
+lang1.grid(row=16, column=2)
 # 'spoken_languages 2
 l_spl2 = tk.Label(root, text='Select Language 2:')
 l_spl2.grid(row=17, sticky=tk.W)
-e_spl2 = tk.StringVar(root)
-e_spl2.set("")
-l2 = ttk.Combobox(root, value=sorted(top_lists['lang_list']), textvariable=e_spl2)
-l2.grid(row=17, column=2)
-
+l2 = tk.StringVar(root)
+l2.set("")
+lang2 = ttk.Combobox(root, value=sorted(top_lists['lang_list']), textvariable=l2)
+lang2.grid(row=17, column=2)
 
 # predict button
 f_btn = tk.Frame(root)
-b_login = tk.Button(f_btn, text='pred', width=6)
+b_login = tk.Button(f_btn, text='pred', width=6, command=reg)
 b_login.grid(row=18, column=5)
 b_cancel = tk.Button(f_btn, text='cancel', width=6, command=root.quit)
 b_cancel.grid(row=18, column=10)
