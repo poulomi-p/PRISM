@@ -121,8 +121,9 @@ for i in range(len(listings)):
 dicts = {}
 
 # Column names of embedded values
-lists_val = ['gen_list_val', 'producers_list_val', 'countries_list_val', 'lang_list_val', 'cast_list_val',
-             'crew_list_val']
+lists_val = ['gen_list_val', 'producers_list_val', 'countries_list_val', 'lang_list_val', 'cast_list_val', 'crew_list_val']
+
+# For each category of textual data
 for i in range(len(lists)):
     list_name = lists[i]
     print(lists_val[i])
@@ -131,6 +132,8 @@ for i in range(len(lists)):
     list_embed = pd.Series([])
     x = 1
     list_dict[""] = x
+
+    # Create embedding dictionary of all possible combinations of top values per category
     for j in range(len(top)):
         x += 1
         ind1 = top[j]
@@ -147,7 +150,6 @@ for i in range(len(lists)):
             list_dict[lst2] = x
             if list_name != 'countries_list' and list_name != 'lang_list':
                 for l in range(k + 1, len(top)):
-
                     ind3 = top[l]
                     if ind1 == ind3 or ind2 == ind3:
                         continue
@@ -165,6 +167,7 @@ for i in range(len(lists)):
                     list_dict[lst5] = x
                     list_dict[lst6] = x
 
+    # Limit each's movie's category list to top 3 entries and embed
     for index, row in mov.iterrows():
         list3 = []
         for j in range(len(row[list_name])):
@@ -186,19 +189,21 @@ for i in range(len(lists)):
 
 print(mov['success'].describe(include="all"))
 
-
+# Select features, targets, and split
 target = ['success']
 X_train, X_test, y_train, y_test = train_test_split(mov[lists_val], mov['success'], test_size=0.2, random_state=0)
 
+# fit model
 tfidfer = TfidfTransformer()
 X_train_tfidf = tfidfer.fit_transform(X_train)
 X_test_tfidf = tfidfer.transform(X_test)
+
 
 svm = LinearSVC().fit(X_train_tfidf, y_train)
 y_pred = svm.predict(X_test_tfidf)
 print(classification_report(y_test, y_pred))
 
-
+# GUI Button method
 def reg():
     X_user = pd.DataFrame([])
     X_act_val = pd.Series([])
@@ -229,7 +234,7 @@ def reg():
     else:
         l_msg['text'] = 'your movie will not be successful'
 
-
+# GUI build
 root = tk.Tk()
 root.title("Drop-down boxes for option selections.")
 
