@@ -18,7 +18,7 @@ from sklearn.naive_bayes import MultinomialNB, GaussianNB
 from sklearn.metrics import classification_report, f1_score, accuracy_score
 from sklearn.svm import LinearSVC
 import numpy as np
-#import spacy
+import spacy
 
 io = StringIO()
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
@@ -35,22 +35,15 @@ mov.drop(["imdb_id", "homepage", "poster_path", "status", "video"], axis=1, inpl
 
 print('List of Column Titles:')
 print(mov.columns.values)
-# print(mov.dtypes)
-# print(mov.describe(include="all"))
-# print('Number of empty values per column:')
-# print(mov.isna().sum())
+
 mov.dropna(subset=["budget"], inplace=True)  # drop rows with NaN budgets
 mov.dropna(subset=["revenue"], inplace=True)  # drop rows with NaN revenues
-mov.dropna(subset=["keywords"], inplace=True)
-#mov.dropna(subset=["runtime"], inplace=True)
-#mov.dropna(subset=["vote_average"], inplace=True)
-mov.dropna(subset=["tagline"], inplace=True)
-mov.dropna(subset=["overview"], inplace=True)
-mov.dropna(subset=["spoken_languages"], inplace=True)
-mov.dropna(subset=["cast"], inplace=True)
-mov.dropna(subset=["crew"], inplace=True)
-# print('Number of empty values after dropping empty budgets and revenues:')
-# print(mov.isna().sum())
+mov.dropna(subset=["keywords"], inplace=True) # drop rows with NaN keywords
+mov.dropna(subset=["tagline"], inplace=True) # drop rows with NaN tagline
+mov.dropna(subset=["overview"], inplace=True) # drop rows with NaN overview
+mov.dropna(subset=["spoken_languages"], inplace=True) # drop rows with NaN spoken_languages
+mov.dropna(subset=["cast"], inplace=True) # drop rows with NaN cast
+mov.dropna(subset=["crew"], inplace=True) # drop rows with NaN crew
 
 # Force all numeric data to float64 data type
 numeric_features = ["budget", "popularity", "revenue", "runtime", "vote_average", "vote_count"]
@@ -59,15 +52,11 @@ for feature_num in numeric_features:
 
 # Remove any where revenue = 0
 inv_revenue = mov.loc[mov['revenue'] == 0]
-# print('Number of 0 revenues: ')
-# print(len(inv_revenue))
 indexNames = mov[mov['revenue'] == 0].index
 mov.drop(indexNames, axis=0, inplace=True)
 
 # Remove any where budget = 0
 inv_budget = mov.loc[mov["budget"] == 0]
-# print('Number of 0 budgets: ')
-# print(len(inv_budget))
 indexNames2 = mov[mov['budget'] == 0].index
 mov.drop(indexNames2, axis=0, inplace=True)
 
@@ -75,28 +64,21 @@ mov.drop(indexNames2, axis=0, inplace=True)
 
 # Create percent profit data
 mov["perc_profit"] = (mov["revenue"] - mov["budget"]) / mov["budget"] * 100
+
+# label the data, make a new boolean column
 mov['success'] = mov['revenue'] > mov['budget']
 
 # Force values to numbers
 mov["perc_profit"] = mov["perc_profit"].apply(pd.to_numeric, errors='coerce')
-
-
 mov.dropna(subset=['perc_profit'], inplace=True)
-
-
-# Display data section with new data
 numeric_features = ["budget", "popularity", "revenue", "runtime", "vote_average", "vote_count", "perc_profit"]
-
-
-# Find all possible possible genres and their counts
 
 
 listings = ['genres', 'production_companies', 'production_countries', 'spoken_languages', 'cast', 'crew', 'keywords','tagline']
 
+# convert text features as a string row by row
 for i in range(len(listings)):
     list1 = pd.Series([])
-
-
     for index, row in mov.iterrows():
         listString = row[listings[i]]
         str=''
@@ -109,28 +91,17 @@ for i in range(len(listings)):
 
 mov[listings[i]] = list1
 
-#process vote_average
-'''
-for index,row in mov.iterrows():
-    mov['vote_average'][index]=round(row['vote_average'])
-    mov['runtime'][index] = round(row['runtime'])
-mov['vote_average'] = mov['vote_average'].astype(np.str)
-mov['runtime'] = mov['runtime'].astype(np.str)
 
-mov.dropna(subset=["vote_average"], inplace=True)
-'''
-
+#create datasets: training data, testing data 8:2
 target=['success']
 text=['genres', 'production_companies', 'production_countries', 'cast', 'crew','title','keywords','tagline','overview','spoken_languages']
+#shuffle data
 mov=shuffle(mov,random_state=15)
 X_train, X_test, y_train, y_test = train_test_split(mov[text], mov['success'], test_size=0.2,random_state=0)
 
-#text=['original_title']
-
-
-
+#set up a CountVectorizer
 counter=CountVectorizer( ngram_range=(1,3),stop_words='english')
-#X_train_bow=counter.fit_transform(X_train)
+
 genlist_train=[]
 genlist_test=[]
 for index,row in X_train.iterrows():
@@ -148,43 +119,18 @@ for index,row in X_test.iterrows():
 
 X_test_bow=counter.transform(genlist_test)
 
-suc_num=0
-unsuc_num=0
 
-for i in y_train:
-    if(i==True):
-        suc_num=suc_num+1
-    if(i==False):
-        unsuc_num=unsuc_num+1
-
-print(suc_num,"  ",unsuc_num)
-print("\n")
-
-for i in y_train:
-   print(i)
-   print("\n")
-
+#embedding text features by TFIDF
 tfidfer=TfidfTransformer()
 X_train_tfidf=tfidfer.fit_transform(X_train_bow)
 X_test_tfidf=tfidfer.transform(X_test_bow)
-'''
+
+#set up our model LinearSVC
 svm = LinearSVC().fit(X_train_tfidf,y_train)
 y_pred = svm.predict(X_test_tfidf)
 print(classification_report(y_test, y_pred))
 
-hasher=HashingVectorizer(stop_words="english", ngram_range=(1,3),alternate_sign=False)
-X_train_hash=hasher.fit_transform(genlist_train)
-X_test_hash=hasher.transform(genlist_test)
-
-svm_hash = LinearSVC().fit(X_train_hash,y_train)
-y_pred_hash = svm_hash.predict(X_test_hash)
-print(classification_report(y_test, y_pred_hash))
-'''
-mnb = MultinomialNB()
-mnb.fit(X_train_tfidf, y_train)
-mnb_y_predict = mnb.predict(X_test_tfidf)
-print(classification_report(y_test, mnb_y_predict))
-
+# GUI designed
 def reg():
    str_all =''
    test=[]
@@ -200,14 +146,14 @@ def reg():
       X_tr_tfidf = tfidfer.transform(X_tr_bow)
       print(np.sum(X_tr_tfidf))
       if(np.sum(X_tr_tfidf)>0):
-         pred= mnb.predict(X_tr_tfidf)
+         pred= svm.predict(X_tr_tfidf)
       if(pred):
          l_msg['text'] = 'your movie will be successful'
       else:
          l_msg['text'] = 'your movie will not be successful'
 
 
-
+# GUI designed
 root = tk.Tk()
 root.geometry('500x500')
 root.title("movie prediction")
