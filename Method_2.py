@@ -3,20 +3,16 @@ import pandas as pd
 import tkinter as tk
 import tkinter.ttk as ttk
 
-from sklearn import linear_model
-from sklearn.model_selection import train_test_split
-import json
+
 import re
 from io import StringIO
 
-import sklearn
+
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer, HashingVectorizer
-from sklearn.naive_bayes import MultinomialNB, GaussianNB
 from sklearn.metrics import classification_report, f1_score, accuracy_score
 from sklearn.svm import LinearSVC
 
-import operator
 
 io = StringIO()
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
@@ -40,8 +36,7 @@ print(mov.columns.values)
 mov.dropna(subset=["budget"], inplace=True)  # drop rows with NaN budgets
 mov.dropna(subset=["revenue"], inplace=True)  # drop rows with NaN revenues
 
-# print('Number of empty values after dropping empty budgets and revenues:')
-# print(mov.isna().sum())
+
 
 # Force all numeric data to float64 data type
 numeric_features = ["budget", "popularity", "revenue", "runtime", "vote_average", "vote_count", "keywords"]
@@ -49,34 +44,12 @@ for feature_num in numeric_features:
     mov[feature_num] = mov[feature_num].apply(pd.to_numeric, errors='coerce')
 
 # Remove any where revenue = 0
-inv_revenue = mov.loc[mov["revenue"] == 0]
-# print('Number of 0 revenues: ')
-# print(len(inv_revenue))
 indexNames = mov[mov['revenue'] == 0].index
 mov.drop(indexNames, axis=0, inplace=True)
 
 # Remove any where budget = 0
-inv_budget = mov.loc[mov["budget"] == 0]
-# print('Number of 0 budgets: ')
-# print(len(inv_budget))
 indexNames2 = mov[mov['budget'] == 0].index
 mov.drop(indexNames2, axis=0, inplace=True)
-
-# inv_revenue=mov.loc[mov["revenue"]==0]
-# print('If zero, empty revenues successfully deleted:')
-# print(len(inv_budget))
-
-# inv_budget=mov.loc[mov["budget"]==0]
-# print('If zero, empty budgets successfully deleted:')
-# print(len(inv_revenue))
-
-# print(mov[numeric_features].head())
-# print('New number of movie datapoints:')
-# print(len(mov))
-
-# Double check that data is numeric, float64
-# print(mov["budget"].dtype)
-# print(mov["revenue"].dtype)
 
 # Create percent profit data
 mov["perc_profit"] = (mov["revenue"] - mov["budget"]) / mov["budget"] * 100
@@ -86,52 +59,41 @@ mov['success'] = mov['revenue'] > 2*mov['budget']
 # Force values to numbers
 mov["perc_profit"] = mov["perc_profit"].apply(pd.to_numeric, errors='coerce')
 
-# print(mov["perc_profit"].dtype)
-# print(mov['perc_profit'].describe(include='all'))
-# print(mov['perc_profit'].isna().sum())
+
 mov.dropna(subset=['perc_profit'], inplace=True)
-# print(mov['perc_profit'].isna().sum())
 
 # Display data section with new data
 numeric_features = ["budget", "popularity", "revenue", "runtime", "vote_average", "vote_count", "perc_profit"]
-# print(mov[numeric_features])
 
-# print(mov[numeric_features].corr())
+# Find all possible possible text entries per category and their counts in successful movies
 
-# print(mov[numeric_features].describe(include="all"))
-
-# Manually solved for 10 most popular genres
-# drama 2239
-# comedy 1667
-# thriller 1391
-# action 1246
-# adventure 888
-# romance 881
-# crime 789
-# scifi 597
-# horror 557
-# family 506
-pop_genres = ["Drama", "Comedy", "Thriller", "Action", "Adventure", "Romance", "Crime", "Science Fiction", "Horror",
-              "Family"]
-
-# Find all possible possible genres and their counts
-
+# Column names of textual data
 listings = ['genres', 'production_companies', 'production_countries', 'spoken_languages', 'cast', 'crew']
-max_entries_movies = 3
-min_movie = [10, 100, 10, 10, 250, 100]  # edit crew members later
-max_list = [3, 3, 2, 2, 3, 3]
+
+min_movie = [10, 100, 10, 10, 250, 100]  # find the most popular x entries per category, respectively
+max_list = [3, 3, 2, 2, 3, 3] #minimizes movie string lists to x entries, respectively
+
+# Column names of edited lists
 lists = ['gen_list', 'producers_list', 'countries_list', 'lang_list', 'cast_list', 'crew_list']
+
+# Pre-allocate variables
 success_list = pd.Series([])
 success_dicts = pd.Series([])
 top_lists = {}
+
+# For each textual column
 for i in range(len(listings)):
     list1 = pd.Series([])
     successDict = {}
     list2 = []
     list3 = pd.Series([])
     print(listings[i])
+
+    # For each movie
     for index, row in mov.iterrows():
         listString = row[listings[i]]
+
+        # Parse data from file to list of strings
         l = re.findall('\'name\': \'[0-9a-zA-Z ]*\'', listString)
         for j in range(len(l)):
             st = l[j]
@@ -146,6 +108,7 @@ for i in range(len(listings)):
                     successDict[st] = 1
         list1[index] = l
     mov[lists[i]] = list1
+
     # Create a list of tuples sorted by index 1 i.e. value field
     listofTuples = sorted(successDict.items(), reverse=True, key=lambda x: x[1])
 
@@ -153,9 +116,11 @@ for i in range(len(listings)):
     for j in range(0, min_movie[i]):
         if listofTuples[j][0] != '':
             list2.append(listofTuples[j][0])
-    top_lists[lists[i]] = list2
+    top_lists[lists[i]] = list2  # Created list of top x entries of category
 
 dicts = {}
+
+# Column names of embedded values
 lists_val = ['gen_list_val', 'producers_list_val', 'countries_list_val', 'lang_list_val', 'cast_list_val',
              'crew_list_val']
 for i in range(len(lists)):

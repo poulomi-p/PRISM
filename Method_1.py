@@ -18,7 +18,7 @@ from sklearn.naive_bayes import MultinomialNB, GaussianNB
 from sklearn.metrics import classification_report, f1_score, accuracy_score
 from sklearn.svm import LinearSVC
 import numpy as np
-import spacy
+#import spacy
 
 io = StringIO()
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
